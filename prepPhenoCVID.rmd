@@ -1,0 +1,55 @@
+---
+title: "R Notebook"
+author: tanzi
+date: 1/24/2022
+output: html_notebook
+---
+required packages
+```{r}
+require(ranger)
+require(here)
+```
+read phenotypic data.
+```{r}
+pheno <- read.csv(here("Data_Prediction", "Soybean_Y.csv"), row.names = 1)
+dim(pheno)
+```
+read compressed marker genotype data
+```{r}
+soy.cmp <- read.csv(here("Data_Prediction/Compress_3_Chunk", "Soybean_X_C3_0.csv"), row.names = 1)
+soy.cmp <- t(soy.cmp)
+dim(soy.cmp)
+```
+```{r}
+#match <- rownames(soy.cmp) %in% rownames(pheno)
+#sum(!match)
+soy.cmp.select <- soy.cmp[rownames(soy.cmp) %in% rownames(pheno), ]
+pheno.select <- pheno[rownames(pheno) %in% rownames(soy.cmp), , drop=FALSE]
+#mtch <- intersect(rownames(pheno), rownames(soy.cmp))
+#dim(soy.cmp[mtch, ])
+```
+
+```{r}
+dim(pheno.select)
+dim(soy.cmp.select)
+```
+generate cv.ids (use them for all traits)
+```{r}
+n.fold <- 10
+n.rep <- 5
+n.sample <- nrow(pheno.select)
+cv.id <- matrix(NA, nrow = n.sample, ncol = n.rep)
+for(i in 1:n.rep) {
+  cv.id[,i] <- sample(1:n.sample %% n.fold) + 1
+}
+rownames(cv.id) <- rownames(pheno.select)
+colnames(cv.id) <- paste0("CV", 1:n.rep)
+```
+
+```{r}
+dim(cv.id)
+```
+save the data
+```{r}
+write.csv(cv.id, here("Data_Prediction", "Soybean_CVID.csv"), quote = F)
+```

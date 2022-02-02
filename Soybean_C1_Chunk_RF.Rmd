@@ -1,0 +1,140 @@
+---
+title: "Soybean_C1_Chunk_RF"
+author: "Tanzila Islam"
+date: "1/19/2022"
+output: html_document
+---
+
+# required packages
+
+```{r}
+require(ranger)
+#require(gaston)
+require(here)
+require(tictoc)
+require(missForest)
+```
+read soy original row extract
+```{r}
+soy.row <- read.csv(here("Data_Prediction", "Soybean_Row_Extract.csv"), header = FALSE)
+print(soy.row)
+# dim(soy.row)
+```
+
+read compressed marker genotype data
+```{r}
+soy.cmp <- read.csv(here("Data_Prediction/Compress_1_Chunk", "Soybean_X_C1_8.csv"), row.names = 1)
+```
+check the size of data
+```{r}
+# dim(hdra.org)
+dim(soy.cmp)
+```
+transpose the compressed data.
+```{r}
+soy.cmp <- t(soy.cmp)
+dim(soy.cmp)
+```
+read phenotypic data.
+```{r}
+pheno <- read.csv(here("Data_Prediction", "Soybean_Y.csv"), row.names = 1)
+dim(pheno)
+```
+
+mapped pheno with geno
+```{r}
+soy.cmp.select <- soy.cmp[rownames(soy.cmp) %in% rownames(pheno), ]
+pheno.select <- pheno[rownames(pheno) %in% rownames(soy.cmp), , drop=FALSE]
+```
+
+```{r}
+dim(pheno.select)
+dim(soy.cmp.select)
+```
+ranger requires the column names (names of variables)
+```{r}
+colnames(soy.cmp.select) <- sprintf("V%05d", 1:ncol(soy.cmp.select))
+head(colnames(soy.cmp.select))
+tail(colnames(soy.cmp.select))
+```
+read cross-validation ids.
+```{r}
+cv.id <- read.csv(here("Data_Prediction", "Soybean_CVID.csv"), row.names = 1)
+dim(cv.id)
+```
+# prepare snps data
+
+```{r}
+soy <- soy.cmp.select[rownames(pheno.select), ]
+soy <- soy[, apply(soy, 2, sd) > 0]
+dim(soy)
+```
+# prepare independent variables (638,274 SNPs!)
+
+```{r}
+X <- as.matrix(soy)
+```
+# genomic prediction
+
+```{r}
+tic()
+y.out <- vector("list", ncol(pheno.select))
+y.predresult <- vector("list", ncol(pheno.select))
+names(y.out) <- colnames(pheno.select)
+for(trait.id in 1:ncol(pheno.select)) {
+  print(colnames(pheno.select)[trait.id])
+
+  y <- pheno.select[, trait.id]
+  names(y) <- rownames(pheno.select)
+  y <- na.omit(y)
+  this.cv.id <- cv.id[names(y), ]
+  this.X <- X[names(y), ]
+
+  y.pred <- matrix(NA, nrow(pheno.select), ncol(cv.id))
+  rownames(y.pred) <- rownames(pheno.select)
+  colnames(y.pred) <- colnames(cv.id)
+  for(i in 1:ncol(this.cv.id)) {
+    for(j in 1:max(this.cv.id)) {
+      print(paste(i, j))
+      is.train <- this.cv.id[,i] != j
+      y.train <- y[is.train]
+      X.train <- this.X[is.train, ]
+      X.test <- this.X[!is.train, ]
+
+      model <- ranger(x = X.train, y = y.train)
+      if(is.vector(X.test)) X.test <- t(as.matrix(X.test))
+      y.pred[names(y), i][!is.train] <- predict(model, X.test)$predictions
+    }
+  }
+  y.out[[trait.id]] <- data.frame(y.obs = pheno.select[, trait.id], y.pred)
+  pred.acc <- cor(y.out[[trait.id]], use = "pair")[1,]
+  y.predresult[[trait.id]] <- data.frame(pred.acc)
+  print(cor(y.out[[trait.id]], use = "pair")[1,])
+}
+toc()
+```
+output data
+```{r}
+saveRDS(y.out,
+        here("ModelMetaData_Prediction/Net_1_RF_Chunk", "Soybean_PredictedOutput_C1_Chunk_8.rds"))
+```
+output data as csv
+```{r}
+write.csv(y.out, here("ModelMetaData_Prediction/Net_1_RF_Chunk",  "Soybean_PredictedOutput_C1_Chunk_8.csv"), quote = F)
+```
+
+```{r}
+y.predresult.df <- data.frame(y.predresult)
+print(y.predresult.df)
+```
+```{r}
+#colnames(y.predresult.df)
+#colnames(pheno.select)
+colnames(y.predresult.df) <- colnames(pheno.select)
+y.predresult.df <- y.predresult.df[-1,]
+print(y.predresult.df)
+```
+output prediction accuracy
+```{r}
+write.csv(y.predresult.df, here("ModelMetaData_Prediction/Net_1_RF_Chunk",  "Soybean_PredictionAccuracy_RF_C1_Chunk_8.csv"), quote = F)
+```

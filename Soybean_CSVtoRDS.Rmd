@@ -1,0 +1,45 @@
+---
+title: "Save CSV as RDS"
+author: "Tanzila Islam"
+date: "1/19/2022"
+output: html_document
+---
+
+# required packages
+
+```{r}
+require(ranger)
+require(gaston)
+require(here)
+require(tictoc)
+```
+
+# data preparation
+
+```{r}
+soy.org <- read.csv(here("Data_Prediction", "Soybean_Data.csv"))
+dim(soy.org)
+head(soy.org[,1:5])
+```
+
+```{r}
+hdra.t <- t(hdra.org)
+head(hdra.t[,1:6])
+```
+
+```{r}
+hdra <- hdra.t
+#rownames(hdra) <- hdra.t[,1]
+dim(hdra)
+head(hdra[,1:5])
+```
+
+```{r}
+saveRDS(hdra, here("HDRA/dataHDRA/HDRA_RDS", "HDRA_Compress_3.rds"))
+```
+
+```{r}
+tic()
+hdra2 <- readRDS(here("HDRA/dataHDRA/HDRA_RDS", "HDRA_Compress_3.rds"))
+toc()
+```
