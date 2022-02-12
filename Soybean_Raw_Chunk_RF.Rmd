@@ -23,7 +23,7 @@ print(soy.row)
 
 read compressed marker genotype data
 ```{r}
-soy.cmp <- read.csv(here("Data_Prediction/Raw_Chunk", "Soybean_X_Raw_0.csv"), row.names = 1)
+soy.cmp <- read.csv(here("Data_Prediction/Raw_Chunk", "Soybean_X_Raw_16.csv"), row.names = 1)
 ```
 check the size of data
 ```{r}
@@ -116,11 +116,11 @@ toc()
 output data
 ```{r}
 saveRDS(y.out,
-        here("ModelMetaData_Prediction/Raw_RF_Chunk", "Soybean_PredictedOutput_Raw_Chunk_0.rds"))
+        here("ModelMetaData_Prediction/Raw_RF_Chunk", "Soybean_PredictedOutput_Raw_Chunk_16.rds"))
 ```
 output data as csv
 ```{r}
-write.csv(y.out, here("ModelMetaData_Prediction/Raw_RF_Chunk",  "Soybean_PredictedOutput_Raw_Chunk_0.csv"), quote = F)
+write.csv(y.out, here("ModelMetaData_Prediction/Raw_RF_Chunk",  "Soybean_PredictedOutput_Raw_Chunk_16.csv"), quote = F)
 ```
 
 ```{r}
@@ -136,5 +136,5 @@ print(y.predresult.df)
 ```
 output prediction accuracy
 ```{r}
-write.csv(y.predresult.df, here("ModelMetaData_Prediction/Raw_RF_Chunk",  "Soybean_PredictionAccuracy_RF_Raw_Chunk_0.csv"), quote = F)
+write.csv(y.predresult.df, here("ModelMetaData_Prediction/Raw_RF_Chunk",  "Soybean_PredictionAccuracy_RF_Raw_Chunk_16.csv"), quote = F)
 ```
